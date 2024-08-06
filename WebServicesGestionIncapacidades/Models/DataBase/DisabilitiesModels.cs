@@ -48,7 +48,7 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
-        public DataTable GetAttachedForTypeDesability(string IdTypeDisabilities, string IdEPS, int Transcribed)
+        public DataTable GetAttachedForTypeDesability(string IdTypeDisabilities, string IdEPS, int Transcribed, int Transit)
         {
             try
             {
@@ -58,7 +58,8 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 {
                     dbConnection.CreateParam("IdFondo", IdEPS, DbType.String),
                     dbConnection.CreateParam("IdIncapacidades", IdTypeDisabilities, DbType.String),
-                    dbConnection.CreateParam("Transcrita", Transcribed, DbType.Int16)
+                    dbConnection.CreateParam("Transcrita", Transcribed, DbType.Int16),
+                    dbConnection.CreateParam("es_transito ", Transit, DbType.Int16)
                 };
                 return dbConnection.GetDataTable("ConsultarAdjuntosRequridos", parameters);
             }

@@ -1,9 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class;
 using WebServicesGestionIncapacidades.Models.Class.Request;
@@ -21,7 +17,7 @@ namespace WebServicesGestionIncapacidades.Core
         {
             _configuration = configuration;
         }
-        public AttachedResponse GetAttachedRequired(string Token, string IdTypeDisabilities, string IdEPS, int Transcribed)
+        public AttachedResponse GetAttachedRequired(string Token, string IdTypeDisabilities, string IdEPS, int Transcribed, int Transit)
         {
             AttachedResponse responseModels = new();
             try
@@ -35,7 +31,7 @@ namespace WebServicesGestionIncapacidades.Core
                 {
                     DisabilitiesModels disabilitiesModels = new(_configuration);
                     Utilities utilities = new(_configuration);
-                    DataTable data = disabilitiesModels.GetAttachedForTypeDesability(IdTypeDisabilities, IdEPS, Transcribed);
+                    DataTable data = disabilitiesModels.GetAttachedForTypeDesability(IdTypeDisabilities, IdEPS, Transcribed, Transit);
 
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
                     if (data.Rows[0]["code"].ToString() == "1")
@@ -213,7 +209,7 @@ namespace WebServicesGestionIncapacidades.Core
                 if (isValid)
                 {
                     DisabilitiesModels disabilitiesModels = new(_configuration);
-                    Utilities utilities = new(_configuration);
+                    UtilitiesCore utilitiesCore = new(_configuration);
                     DataTable data = disabilitiesModels.GetFixDesability(Id);
 
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
@@ -222,11 +218,13 @@ namespace WebServicesGestionIncapacidades.Core
                         responseModels.Token = Token;
                         responseModels.CodeResponse = "200";
                         var DataIncapacidad = "" + data.Rows[0]["DataIncapacidad"].ToString() + "";
+                        var DataCompany = "" + data.Rows[0]["DataCompany"].ToString() + "";
                         var DataNovedadesDocumentos = "[" + data.Rows[0]["DataNovedadesDocumentos"].ToString() + "]";
                         var DataDocumentos = "[" + data.Rows[0]["DataDocumentos"].ToString() + "]";
                         if (!string.IsNullOrEmpty(DataIncapacidad))
                         {
                             DisabilityClass disabilityClass = JsonConvert.DeserializeObject<DisabilityClass>(DataIncapacidad);
+                            companyParameterClass companyParameterClass = JsonConvert.DeserializeObject<companyParameterClass>(DataCompany);
                             List<FixDocumentClass> fixDocumentClasses = JsonConvert.DeserializeObject<List<FixDocumentClass>>(DataNovedadesDocumentos);
                             List<DocumentClass> documentClasses = JsonConvert.DeserializeObject<List<DocumentClass>>(DataDocumentos);
 
@@ -234,7 +232,10 @@ namespace WebServicesGestionIncapacidades.Core
                             {
                                 disabilityClass = disabilityClass,
                                 fixDocumentClass = fixDocumentClasses,
-                                documentClass = documentClasses
+                                documentClass = documentClasses,
+                                companyparameter = companyParameterClass,
+                                Base64ImgEps = utilitiesCore.GetEPSBase64(data.Rows[0]["CodigoFondo"].ToString()),
+                                logo = utilitiesCore.GetLogoBase64(data.Rows[0]["id_empresa"].ToString())
                             };
                             responseModels.Data = fixDesalibityClass;
                         }
@@ -256,11 +257,11 @@ namespace WebServicesGestionIncapacidades.Core
             {
                 if (string.IsNullOrEmpty(token)) return false;
 
-                var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:SaltFixDesability"]);
+                var key = _configuration["JwtSettings:SaltFixDesability"];
                 UtilitiesCore utilitiesCore = new(_configuration);
-                if (utilitiesCore.GetSHA256(Id.ToString() + key) == token)
+                if (utilitiesCore.GetSHA512(Id.ToString() + key) == token)
                     return true;
-                else 
+                else
                     return false;
             }
             catch (Exception)
@@ -308,7 +309,7 @@ namespace WebServicesGestionIncapacidades.Core
                                     DoumentDetails = DoumentDetails + $"({id}) ";
                                 };
                             }
-                        }                        
+                        }
 
                         responseModels.Token = Token;
                         responseModels.CodeResponse = "201";

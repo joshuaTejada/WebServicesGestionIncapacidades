@@ -4,5 +4,6 @@
     {
         public string id_documento_adjunto { get; set; }
         public string adjunto { get; set; }
+        public string documento { get; set; }
     }
 }

@@ -18,13 +18,13 @@ namespace WebServicesGestionIncapacidades.Controllers
         }
         // GET api/<AttachedRequiredController>/5
         [HttpGet]
-        public AttachedResponse GetAttachedRequired([FromHeader] string Token, string IdTypeDisabilities, string IdEPS, int Transcribed)
+        public AttachedResponse GetAttachedRequired([FromHeader] string Token, string IdTypeDisabilities, string IdEPS, int Transcribed, int Transit)
         {
             AttachedResponse responseModels = new();
             try
             {
                 DesabilitiesCore desabilitiesCore = new(_configuration);
-                responseModels = desabilitiesCore.GetAttachedRequired(Token, IdTypeDisabilities, IdEPS, Transcribed);
+                responseModels = desabilitiesCore.GetAttachedRequired(Token, IdTypeDisabilities, IdEPS, Transcribed, Transit);
             }
             catch (Exception ex)
             {

@@ -1,7 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
-using Newtonsoft.Json.Linq;
-using System.Text;
 using WebServicesGestionIncapacidades.Core;
 using WebServicesGestionIncapacidades.Models.Class.Response;
 
@@ -40,6 +37,13 @@ namespace WebServicesGestionIncapacidades.Controllers
         //{
         //    UtilitiesCore utilitiesCore = new(_configuration);
         //    return utilitiesCore.GetSHA256(id + Encoding.UTF8.GetBytes(_configuration["JwtSettings:SaltFixDesability"]));
+        //}
+
+        //[HttpGet]
+        //public string Get(string id)
+        //{
+        //    SecurityCore utilitiesCore = new(_configuration);
+        //    return utilitiesCore.GenerateToken(id, "");
         //}
     }
 }
