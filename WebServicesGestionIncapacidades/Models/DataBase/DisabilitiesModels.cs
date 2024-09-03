@@ -48,7 +48,7 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
-        public DataTable GetAttachedForTypeDesability(string IdTypeDisabilities, string IdEPS, int Transcribed, int Transit)
+        public DataTable GetAttachedForTypeDesability(int IdTypeDisabilities, string IdEPS, int Transcribed, int Transit, string DiagnosticoCode)
         {
             try
             {
@@ -57,9 +57,10 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 List<SqlParameter> parameters = new()
                 {
                     dbConnection.CreateParam("IdFondo", IdEPS, DbType.String),
-                    dbConnection.CreateParam("IdIncapacidades", IdTypeDisabilities, DbType.String),
+                    dbConnection.CreateParam("IdIncapacidades", IdTypeDisabilities, DbType.Int64),
                     dbConnection.CreateParam("Transcrita", Transcribed, DbType.Int16),
-                    dbConnection.CreateParam("es_transito ", Transit, DbType.Int16)
+                    dbConnection.CreateParam("es_transito ", Transit, DbType.Int16),
+                    dbConnection.CreateParam("DiagnosticoCode ", DiagnosticoCode, DbType.String)
                 };
                 return dbConnection.GetDataTable("ConsultarAdjuntosRequridos", parameters);
             }
@@ -96,6 +97,24 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                     dbConnection.CreateParam("id_incapacidad", Id, DbType.Int64)
                 };
                 return dbConnection.GetDataTable("ConsultarCorrecionIncapacidad", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        public DataTable GetHealthFund(int Id, string empresa)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("IdTipoIncapacidades", Id, DbType.Int64),
+                    dbConnection.CreateParam("Empresa", empresa, DbType.String)
+                };
+                return dbConnection.GetDataTable("ConsultarFondoPorTipoIncapacidad", parameters);
             }
             catch (Exception)
             {
