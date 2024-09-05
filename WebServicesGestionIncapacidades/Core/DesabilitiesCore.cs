@@ -46,9 +46,6 @@ namespace WebServicesGestionIncapacidades.Core
                             List<AttachedRequiredClass> AttachedRequiredClassList = JsonConvert.DeserializeObject<List<AttachedRequiredClass>>(documentosRequeridos);
                             responseModels.Data = AttachedRequiredClassList;
                         }
-
-                        DataTable dataARL = disabilitiesModels.GetHealthFund(IdTypeDisabilities, nit_cliente);
-                        responseModels.IdARL = int.Parse(dataARL.Rows[0]["id_arl"].ToString());
                         responseModels.Base64ImgEps = Transcribed == 1 ? GetEPSBase64(data.Rows[0]["codigo"].ToString()) : GetEPSBase64("no_transcrita");
                     }
                     else
@@ -329,7 +326,7 @@ namespace WebServicesGestionIncapacidades.Core
             }
             return responseModels;
         }
-        public healthFundResponse GetHealthFund(string Token, int Id)
+        public healthFundResponse GetHealthFund(string Token, int IdTypeDisability, string ID)
         {
             healthFundResponse responseModels = new();
             try
@@ -344,14 +341,14 @@ namespace WebServicesGestionIncapacidades.Core
                     string nit_cliente = int.Parse(claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value).ToString();
 
                     DisabilitiesModels disabilitiesModels = new(_configuration);
-                    DataTable data = disabilitiesModels.GetHealthFund(Id, nit_cliente);
+                    DataTable data = disabilitiesModels.GetHealthFund(IdTypeDisability, nit_cliente, ID);
 
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
                     if (data.Rows[0]["code"].ToString() == "1")
                     {
                         responseModels.Token = Token;
                         responseModels.CodeResponse = "200";
-                        responseModels.IdARL = data.Rows[0]["id_arl"].ToString();
+                        responseModels.IdFund = data.Rows[0]["id_arl"].ToString();
                         
                     }
                     else

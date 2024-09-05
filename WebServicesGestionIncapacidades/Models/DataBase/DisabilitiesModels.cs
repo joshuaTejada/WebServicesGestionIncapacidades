@@ -103,7 +103,7 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
-        public DataTable GetHealthFund(int Id, string empresa)
+        public DataTable GetHealthFund(int IdTypeDisability, string empresa, string ID)
         {
             try
             {
@@ -111,8 +111,9 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
 
                 List<SqlParameter> parameters = new()
                 {
-                    dbConnection.CreateParam("IdTipoIncapacidades", Id, DbType.Int64),
-                    dbConnection.CreateParam("Empresa", empresa, DbType.String)
+                    dbConnection.CreateParam("IdTipoIncapacidades", IdTypeDisability, DbType.Int64),
+                    dbConnection.CreateParam("Empresa", empresa, DbType.String),
+                    dbConnection.CreateParam("ID", ID, DbType.String)
                 };
                 return dbConnection.GetDataTable("ConsultarFondoPorTipoIncapacidad", parameters);
             }

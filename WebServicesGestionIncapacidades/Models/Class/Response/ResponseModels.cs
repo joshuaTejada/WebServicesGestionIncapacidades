@@ -22,7 +22,6 @@
         public string? Token { get; set; }
         public string? Base64ImgEps { get; set; }
         public List<AttachedRequiredClass>? Data { get; set; }
-        public int? IdARL { get; set; }
     }
     public class DiagnosisResponse
     {
@@ -50,6 +49,6 @@
         public string? CodeResponse { get; set; } = string.Empty;
         public string? MessageResponse { get; set; } = string.Empty;
         public string? Token { get; set; }
-        public string? IdARL { get; set; }
+        public string? IdFund { get; set; }
     }
 }
