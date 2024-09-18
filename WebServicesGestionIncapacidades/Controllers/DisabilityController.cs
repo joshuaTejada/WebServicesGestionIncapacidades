@@ -1,8 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 using WebServicesGestionIncapacidades.Core;
 using WebServicesGestionIncapacidades.Models.Class.Request;
 using WebServicesGestionIncapacidades.Models.Class.Response;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -52,5 +54,14 @@ namespace WebServicesGestionIncapacidades.Controllers
             }
             return responseModels;
         }
+
+        //[HttpGet]
+        //public async Task<bool> Get() {
+
+        //    // Notificar al usuario de su incapacidad
+        //    UtilitiesCore utilitiesCore = new(_configuration);
+        //    var a = await utilitiesCore.SendEmail("informatica3@gigha.com.co", "Incapacidad recibida", "Pruebas", true);
+        //    return a;
+        //}
     }    
 }

@@ -32,18 +32,5 @@ namespace WebServicesGestionIncapacidades.Controllers
             }
             return responseModels;
         }
-        //[HttpGet]
-        //public string Get(string id)
-        //{
-        //    UtilitiesCore utilitiesCore = new(_configuration);
-        //    return utilitiesCore.GetSHA256(id + Encoding.UTF8.GetBytes(_configuration["JwtSettings:SaltFixDesability"]));
-        //}
-
-        //[HttpGet]
-        //public string Get(string id)
-        //{
-        //    SecurityCore utilitiesCore = new(_configuration);
-        //    return utilitiesCore.GenerateToken(id, "");
-        //}
     }
 }
