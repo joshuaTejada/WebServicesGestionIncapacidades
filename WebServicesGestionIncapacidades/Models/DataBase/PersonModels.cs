@@ -49,7 +49,8 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                     dbConnection.CreateParam("Movil", personRequest.Cel, DbType.String),
                     dbConnection.CreateParam("FechaIngreso", personRequest.DateStart, DbType.Date),
                     dbConnection.CreateParam("FondoSalud", personRequest.EPS, DbType.String),
-                    dbConnection.CreateParam("Empresa", personRequest.NitCompany, DbType.String)
+                    dbConnection.CreateParam("Empresa", personRequest.NitCompany, DbType.String),
+                    dbConnection.CreateParam("Nomina", personRequest.Nomina, DbType.String),
                 };
                 return dbConnection.GetDataTable("RegistarPersona", parameters);
             }

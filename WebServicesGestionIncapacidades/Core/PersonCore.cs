@@ -59,6 +59,7 @@ namespace WebServicesGestionIncapacidades.Core
                 DataFondos = dataUser.Rows[0]["DataFondos"].ToString(),
                 DataTypeDesabilities = dataUser.Rows[0]["DataTipoIncapacidad"].ToString(),
                 DataDiagnostico = dataUser.Rows[0]["DataDiagnosticos"].ToString(),
+                DataEmpleado = dataUser.Rows[0]["DataEmpleado"].ToString(),
             };
             return dataGeneralClass;
         }
