@@ -140,5 +140,22 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
+        public DataTable GetDisabilities(int ID)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("Identificacion", ID, DbType.String)
+                };
+                return dbConnection.GetDataTable("ConsultarIncapacidades", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }

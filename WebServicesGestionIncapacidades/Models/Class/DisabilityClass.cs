@@ -17,4 +17,15 @@
         public bool es_transito { get; set; }
         public bool es_transcrita { get; set; }
     }
+    public class GeneralDisabilityClass
+    {
+        public int ID { get; set; }
+        public string tipo_incapacidad { get; set; }
+        public string Diagnostico { get; set; }
+        public string desc_diagnostico { get; set; }
+        public string Estado { get; set; }
+        public string Fecha_registro_incapacidad { get; set; }
+        public string Link { get; set; }
+    }
+
 }

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Security.Claims;
 using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class;
 using WebServicesGestionIncapacidades.Models.Class.Request;
@@ -31,13 +32,14 @@ namespace WebServicesGestionIncapacidades.Core
                 {
                     PersonModels userModel = new(_configuration);
                     Utilities utilities = new(_configuration);
+                    SecurityCore securityCore = new(_configuration);
                     DataTable dataUser = userModel.ValidateDataPerson(personRequest);
 
                     responseModels.MessageResponse = dataUser.Rows[0]["msg"].ToString();
                     responseModels.Data = GetDataGeneralClass(dataUser);
                     if (dataUser.Rows[0]["code"].ToString() == "1")
                     {
-                        responseModels.Token = Token;
+                        responseModels.Token = securityCore.GenerateToken(personRequest.ID, "");
                         responseModels.CodeResponse = "200";
                     }
                     else
@@ -75,19 +77,23 @@ namespace WebServicesGestionIncapacidades.Core
                 var (isValid, claimsPrincipal) = securityCore1.IsTokenValid(Token);
                 if (isValid)
                 {
-                    PersonModels userModel = new(_configuration);
-                    Utilities utilities = new(_configuration);
-                    DataTable dataUser = userModel.PostPerson(personRequest);
-
-                    responseModels.MessageResponse = dataUser.Rows[0]["msg"].ToString();
-                    if (dataUser.Rows[0]["code"].ToString() == "1")
+                    var IDToken = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+                    if (personRequest.ID == IDToken)
                     {
-                        responseModels.Token = Token;
-                        responseModels.CodeResponse = "201";
-                        responseModels.Data = GetDataGeneralClass(dataUser);
+                        PersonModels userModel = new(_configuration);
+                        Utilities utilities = new(_configuration);
+                        DataTable dataUser = userModel.PostPerson(personRequest);
+
+                        responseModels.MessageResponse = dataUser.Rows[0]["msg"].ToString();
+                        if (dataUser.Rows[0]["code"].ToString() == "1")
+                        {
+                            responseModels.Token = Token;
+                            responseModels.CodeResponse = "201";
+                            responseModels.Data = GetDataGeneralClass(dataUser);
+                        }
+                        else
+                            responseModels.CodeResponse = "204";
                     }
-                    else
-                        responseModels.CodeResponse = "204";
                 }
             }
             catch (Exception)

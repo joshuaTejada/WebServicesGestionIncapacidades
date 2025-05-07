@@ -1,12 +1,15 @@
 ﻿using Newtonsoft.Json;
 using System.Data;
 using System.Security.Claims;
+using System.Text;
 using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class;
 using WebServicesGestionIncapacidades.Models.Class.Request;
 using WebServicesGestionIncapacidades.Models.Class.Response;
 using WebServicesGestionIncapacidades.Models.DataBase;
 using WebServicesGestionIncapacidades.Models.DataBase.Utilities;
+using SixLabors.ImageSharp;
+using WebServicesGestionIncapacidades.Core.utilities;
 
 namespace WebServicesGestionIncapacidades.Core
 {
@@ -17,6 +20,72 @@ namespace WebServicesGestionIncapacidades.Core
         public DesabilitiesCore(IConfiguration configuration)
         {
             _configuration = configuration;
+        }
+        public DisabilityListResponse GetDisabilities(string Token, int ID)
+        {
+            DisabilityListResponse responseModels = new();
+            try
+            {
+                responseModels.MessageResponse = "Token expirado";
+                responseModels.CodeResponse = "401";
+
+                SecurityCore securityCore1 = new(_configuration);
+                var (isValid, claimsPrincipal) = securityCore1.IsTokenValid(Token);
+                if (isValid)
+                {
+                    var IDToken = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+                    if (ID.ToString() == IDToken)
+                    {
+                        DisabilitiesModels disabilitiesModels = new(_configuration);
+                        DataTable data = disabilitiesModels.GetDisabilities(ID);
+
+                        responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
+                        if (data.Rows[0]["code"].ToString() == "1")
+                        {
+                            responseModels.Token = Token;
+                            responseModels.CodeResponse = "200";
+                            var JsonData = "[" + data.Rows[0]["DataIncapacidades"].ToString() + "]";
+                            if (!string.IsNullOrEmpty(JsonData))
+                            {
+                                string token = this.CreatTokenDisability(ID);
+                                List<GeneralDisabilityClass> List = JsonConvert.DeserializeObject<List<GeneralDisabilityClass>>(JsonData);
+
+                                foreach (var item in List)
+                                {
+                                    string link = item.Link?.ToString();
+                                    if (!string.IsNullOrWhiteSpace(link))
+                                    {
+                                        item.Link = link + token;
+                                    }
+                                    link = "";
+                                }
+                                responseModels.Data = List;
+                            }
+                        }
+                        else
+                            responseModels.CodeResponse = "204";
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                responseModels.MessageResponse = "Error al validar el usuario";
+                responseModels.CodeResponse = "500";
+            }
+            return responseModels;
+        }
+        public string CreatTokenDisability(int ID)
+        {
+            try
+            {            
+                var key = _configuration["JwtSettings:SaltFixDesability"];
+                UtilitiesCore utilitiesCore = new(_configuration);
+                return utilitiesCore.GetSHA512(ID.ToString() + key);                  
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
         }
         public AttachedResponse GetAttachedRequired(string Token, int IdTypeDisabilities, string IdEPS, int Transcribed, int Transit, string DiagnosticoCode)
         {
@@ -118,14 +187,17 @@ namespace WebServicesGestionIncapacidades.Core
                 var (isValid, claimsPrincipal) = securityCore1.IsTokenValid(Token);
                 if (isValid)
                 {
-                    DisabilitiesModels disabilitiesModels = new(_configuration);
-                    Utilities utilities = new(_configuration);
-                    DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
-
-                    responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
-                    if (data.Rows[0]["code"].ToString() == "1")
+                    var IDToken = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+                    if (disabilitiesRequest.ID == IDToken)
                     {
-                        var attachments = new List<(string base64, string id)>
+                        DisabilitiesModels disabilitiesModels = new(_configuration);
+                        Utilities utilities = new(_configuration);
+                        DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
+
+                        responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
+                        if (data.Rows[0]["code"].ToString() == "1")
+                        {
+                            var attachments = new List<(string base64, string id)>
                         {
                             (disabilitiesRequest.Base64Attached1, disabilitiesRequest.IdAttached1),
                             (disabilitiesRequest.Base64Attached2, disabilitiesRequest.IdAttached2),
@@ -134,25 +206,48 @@ namespace WebServicesGestionIncapacidades.Core
                             (disabilitiesRequest.Base64Attached5, disabilitiesRequest.IdAttached5),
                             (disabilitiesRequest.Base64Attached6, disabilitiesRequest.IdAttached6)
                         };
-                        string id_incapacidad = data.Rows[0]["id_incapacidad"].ToString();
-                        foreach (var (base64, id) in attachments)
-                        {
-                            if (!string.IsNullOrEmpty(base64))
+                            string id_incapacidad = data.Rows[0]["id_incapacidad"].ToString();
+                            foreach (var (base64, id) in attachments)
                             {
-                                var (IsValid, Message) = SaveDocument(base64, $"{data.Rows[0]["id_empresa"]}_{id_incapacidad}_{id}.pdf");                                
+                                if (!string.IsNullOrEmpty(base64))
+                                {
+                                    //validar el tipo de documento
+                                    byte[] payload;
+                                    payload = Convert.FromBase64String(base64);
+
+                                    using var ms = new MemoryStream(payload);
+
+                                    Span<byte> header = stackalloc byte[5];
+                                    ms.Read(header);
+                                    ms.Position = 0;
+
+                                    string magic = Encoding.ASCII.GetString(header);
+                                    if (magic == "%PDF-")
+                                    {
+                                        var (IsValid, Message) = SaveDocument(base64, $"{data.Rows[0]["id_empresa"]}_{id_incapacidad}_{id}.pdf");
+                                    }
+
+                                    var info = Image.Identify(ms);
+                                    if (info != null)
+                                    {
+                                        documentConverterClass documentConverterClass = new();
+                                        //convertir imagen a pdf
+                                        string nameFile = documentConverterClass.convertImgToPdf(base64, _configuration["route:pathDocument"], $"{data.Rows[0]["id_empresa"]}_{id_incapacidad}_{id}");
+                                    }
+                                }
                             }
+
+                            // Notificar al usuario de su incapacidad
+                            UtilitiesCore utilitiesCore = new(_configuration);
+                            utilitiesCore.SendEmail(data.Rows[0]["email"].ToString(), "Incapacidad recibida", getBodyEmail(data), true);
+
+                            responseModels.Token = Token;
+                            responseModels.CodeResponse = "201";
+                            responseModels.Data = id_incapacidad;
                         }
-
-                        // Notificar al usuario de su incapacidad
-                        UtilitiesCore utilitiesCore = new(_configuration);
-                        utilitiesCore.SendEmail(data.Rows[0]["email"].ToString(), "Incapacidad recibida", getBodyEmail(data), true);
-
-                        responseModels.Token = Token;
-                        responseModels.CodeResponse = "201";
-                        responseModels.Data = id_incapacidad;
+                        else
+                            responseModels.CodeResponse = "200";
                     }
-                    else
-                        responseModels.CodeResponse = "200";
                 }
             }
             catch (Exception ex)

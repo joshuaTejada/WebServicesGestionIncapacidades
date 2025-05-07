@@ -55,6 +55,24 @@ namespace WebServicesGestionIncapacidades.Controllers
             return responseModels;
         }
 
+        [HttpGet]
+        public DisabilityListResponse Get([FromHeader] string token, int ID)
+        {
+            DisabilityListResponse responseModels = new();
+            try
+            {
+                DesabilitiesCore desabilitiesCore = new(_configuration);
+                responseModels = desabilitiesCore.GetDisabilities(token, ID);
+            }
+            catch (Exception ex)
+            {
+                responseModels.CodeResponse = "500";
+                responseModels.MessageResponse = ex.Message;
+            }
+            return responseModels;
+        }
+
+
         //[HttpGet]
         //public async Task<bool> Get() {
 
