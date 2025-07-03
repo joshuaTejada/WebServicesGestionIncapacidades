@@ -26,7 +26,7 @@ namespace WebServicesGestionIncapacidades.Core
             CompanyDataResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 var nit = IsTokenValid(TokenCompany);
@@ -45,6 +45,7 @@ namespace WebServicesGestionIncapacidades.Core
                         responseModels.CodeResponse = "200";
                         responseModels.Data = GetDataCompanyFormat(dataUser);
                         responseModels.Data.logo = GetLogoBase64(dataUser.Rows[0]["logo"].ToString());
+                        responseModels.Data.Background = GetLogoBase64(dataUser.Rows[0]["backgroundo"].ToString());
                     }
                 }
             }

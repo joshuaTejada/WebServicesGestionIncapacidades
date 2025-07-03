@@ -10,6 +10,8 @@ using WebServicesGestionIncapacidades.Models.DataBase;
 using WebServicesGestionIncapacidades.Models.DataBase.Utilities;
 using SixLabors.ImageSharp;
 using WebServicesGestionIncapacidades.Core.utilities;
+using iText.Kernel.Pdf;
+using iText.Kernel.Exceptions;
 
 namespace WebServicesGestionIncapacidades.Core
 {
@@ -22,11 +24,11 @@ namespace WebServicesGestionIncapacidades.Core
             _configuration = configuration;
         }
         public DisabilityListResponse GetDisabilities(string Token, int ID)
-        {
+         {
             DisabilityListResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -47,15 +49,13 @@ namespace WebServicesGestionIncapacidades.Core
                             var JsonData = "[" + data.Rows[0]["DataIncapacidades"].ToString() + "]";
                             if (!string.IsNullOrEmpty(JsonData))
                             {
-                                string token = this.CreatTokenDisability(ID);
                                 List<GeneralDisabilityClass> List = JsonConvert.DeserializeObject<List<GeneralDisabilityClass>>(JsonData);
-
                                 foreach (var item in List)
                                 {
                                     string link = item.Link?.ToString();
                                     if (!string.IsNullOrWhiteSpace(link))
                                     {
-                                        item.Link = link + token;
+                                        item.Link = link + this.CreatTokenDisability(item.ID);
                                     }
                                     link = "";
                                 }
@@ -92,7 +92,7 @@ namespace WebServicesGestionIncapacidades.Core
             AttachedResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -105,6 +105,7 @@ namespace WebServicesGestionIncapacidades.Core
                     DataTable data = disabilitiesModels.GetAttachedForTypeDesability(IdTypeDisabilities, IdEPS, Transcribed, Transit, DiagnosticoCode);
 
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
+                    responseModels.Base64ImgEps = Transcribed == 1 ? GetEPSBase64(data.Rows[0]["codigo"].ToString()) : GetEPSBase64("no_transcrita");
                     if (data.Rows[0]["code"].ToString() == "1")
                     {
                         responseModels.Token = Token;
@@ -115,7 +116,6 @@ namespace WebServicesGestionIncapacidades.Core
                             List<AttachedRequiredClass> AttachedRequiredClassList = JsonConvert.DeserializeObject<List<AttachedRequiredClass>>(documentosRequeridos);
                             responseModels.Data = AttachedRequiredClassList;
                         }
-                        responseModels.Base64ImgEps = Transcribed == 1 ? GetEPSBase64(data.Rows[0]["codigo"].ToString()) : GetEPSBase64("no_transcrita");
                     }
                     else
                         responseModels.CodeResponse = "204";
@@ -141,7 +141,7 @@ namespace WebServicesGestionIncapacidades.Core
             DiagnosisResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -180,7 +180,7 @@ namespace WebServicesGestionIncapacidades.Core
             DisabilityResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -190,14 +190,7 @@ namespace WebServicesGestionIncapacidades.Core
                     var IDToken = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
                     if (disabilitiesRequest.ID == IDToken)
                     {
-                        DisabilitiesModels disabilitiesModels = new(_configuration);
-                        Utilities utilities = new(_configuration);
-                        DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
-
-                        responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
-                        if (data.Rows[0]["code"].ToString() == "1")
-                        {
-                            var attachments = new List<(string base64, string id)>
+                        var attachments = new List<(string base64, string id)>
                         {
                             (disabilitiesRequest.Base64Attached1, disabilitiesRequest.IdAttached1),
                             (disabilitiesRequest.Base64Attached2, disabilitiesRequest.IdAttached2),
@@ -206,6 +199,63 @@ namespace WebServicesGestionIncapacidades.Core
                             (disabilitiesRequest.Base64Attached5, disabilitiesRequest.IdAttached5),
                             (disabilitiesRequest.Base64Attached6, disabilitiesRequest.IdAttached6)
                         };
+
+                        // VALIDACIÓN ANTES DE PROCESAR DATOS
+                        foreach (var (base64, id) in attachments)
+                        {
+                            if (!string.IsNullOrEmpty(base64))
+                            {
+                                byte[] payload;
+                                try
+                                {
+                                    payload = Convert.FromBase64String(base64);
+                                }
+                                catch
+                                {
+                                    responseModels.MessageResponse = $"El archivo adjunto no tiene un formato válido.";
+                                    responseModels.CodeResponse = "406";
+                                    return responseModels;
+                                }
+
+                                using var ms = new MemoryStream(payload);
+                                Span<byte> header = stackalloc byte[5];
+                                ms.Read(header);
+                                ms.Position = 0;
+
+                                string magic = Encoding.ASCII.GetString(header);
+                                if (magic == "%PDF-")
+                                {
+                                    if (IsPdfPasswordProtected(payload))
+                                    {
+                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse.";
+                                        responseModels.CodeResponse = "406";
+                                        return responseModels;
+                                    }
+                                }
+                                else
+                                {
+                                    var info = Image.Identify(ms);
+                                    if (info != null)
+                                    {
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse.";
+                                        responseModels.CodeResponse = "406";
+                                        return responseModels;
+                                    }
+                                }
+                            }
+                        }
+
+                        DisabilitiesModels disabilitiesModels = new(_configuration);
+                        Utilities utilities = new(_configuration);
+                        DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
+
+                        responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
+                        if (data.Rows[0]["code"].ToString() == "1")
+                        {                            
                             string id_incapacidad = data.Rows[0]["id_incapacidad"].ToString();
                             foreach (var (base64, id) in attachments)
                             {
@@ -233,6 +283,7 @@ namespace WebServicesGestionIncapacidades.Core
                                         documentConverterClass documentConverterClass = new();
                                         //convertir imagen a pdf
                                         string nameFile = documentConverterClass.convertImgToPdf(base64, _configuration["route:pathDocument"], $"{data.Rows[0]["id_empresa"]}_{id_incapacidad}_{id}");
+
                                     }
                                 }
                             }
@@ -256,6 +307,19 @@ namespace WebServicesGestionIncapacidades.Core
                 responseModels.CodeResponse = "500";
             }
             return responseModels;
+        }
+        private bool IsPdfPasswordProtected(byte[] pdfBytes)
+        {
+            try
+            {
+                using var reader = new PdfReader(new MemoryStream(pdfBytes));
+                using var pdfDoc = new PdfDocument(reader);
+                return false; // No está protegido
+            }
+            catch (BadPasswordException ex)
+            {
+                return true; // Está protegido con contraseña
+            }
         }
         public (bool IsValid, string Message) SaveDocument(string? Base64Document, string? fileName)
         {
@@ -296,7 +360,7 @@ namespace WebServicesGestionIncapacidades.Core
             FixDesabilityResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -369,7 +433,7 @@ namespace WebServicesGestionIncapacidades.Core
             DisabilityResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -426,7 +490,7 @@ namespace WebServicesGestionIncapacidades.Core
             healthFundResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);

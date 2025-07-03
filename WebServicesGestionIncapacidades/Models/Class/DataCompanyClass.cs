@@ -7,5 +7,6 @@
         public string? colorTerciario { get; set; }
         public string? DataTypeID { get; set; }
         public string? logo { get; set; }
+        public string? Background { get; set; }
     }
 }

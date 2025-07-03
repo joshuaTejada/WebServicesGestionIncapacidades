@@ -20,7 +20,7 @@
     public class GeneralDisabilityClass
     {
         public int ID { get; set; }
-        public string tipo_incapacidad { get; set; }
+        public string Tipo_incapacidad { get; set; }
         public string Diagnostico { get; set; }
         public string desc_diagnostico { get; set; }
         public string Estado { get; set; }

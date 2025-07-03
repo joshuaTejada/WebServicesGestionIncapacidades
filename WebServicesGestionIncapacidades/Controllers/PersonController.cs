@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebServicesGestionIncapacidades.Core;
+using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class.Request;
 using WebServicesGestionIncapacidades.Models.Class.Response;
 
@@ -30,6 +31,13 @@ namespace WebServicesGestionIncapacidades.Controllers
                 responseModels.MessageResponse = ex.Message;
             }
             return responseModels;
+        }
+
+        [HttpGet]
+        public string Get(string id)
+        {
+            SecurityCore securityCore = new(_configuration);            
+            return securityCore.GenerateToken(id,"");
         }
     }
 }
