@@ -178,6 +178,7 @@ namespace WebServicesGestionIncapacidades.Core
         public DisabilityResponse PostDisabilities(string Token, DisabilitiesRequest disabilitiesRequest)
         {
             DisabilityResponse responseModels = new();
+            DisabilitiesModels disabilitiesModels = new(_configuration);
             try
             {
                 responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
@@ -227,7 +228,7 @@ namespace WebServicesGestionIncapacidades.Core
                                 {
                                     if (IsPdfPasswordProtected(payload))
                                     {
-                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse.";
+                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse, te invitamos a desbloquearlo usando alguna herramienta en internet.";
                                         responseModels.CodeResponse = "406";
                                         return responseModels;
                                     }
@@ -241,7 +242,7 @@ namespace WebServicesGestionIncapacidades.Core
                                     }
                                     else
                                     {
-                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse.";
+                                        responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse, te invitamos a desbloquearlo usando alguna herramienta en internet.";
                                         responseModels.CodeResponse = "406";
                                         return responseModels;
                                     }
@@ -249,7 +250,6 @@ namespace WebServicesGestionIncapacidades.Core
                             }
                         }
 
-                        DisabilitiesModels disabilitiesModels = new(_configuration);
                         Utilities utilities = new(_configuration);
                         DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
 
@@ -303,11 +303,13 @@ namespace WebServicesGestionIncapacidades.Core
             }
             catch (Exception ex)
             {
+                disabilitiesModels.PostLogs(ex.Message);
                 responseModels.MessageResponse = "Error al guardar la incapacidad";
                 responseModels.CodeResponse = "500";
             }
             return responseModels;
         }
+
         private bool IsPdfPasswordProtected(byte[] pdfBytes)
         {
             try
@@ -440,6 +442,65 @@ namespace WebServicesGestionIncapacidades.Core
                 var isValid = IsTokenValidDisability(Token, documentRequest.IdDisability);
                 if (isValid)
                 {
+                    var attachments = new List<(string base64, string id)>
+                    {
+                        (documentRequest.Base64Attached1, documentRequest.IdAttached1),
+                        (documentRequest.Base64Attached2, documentRequest.IdAttached2),
+                        (documentRequest.Base64Attached3, documentRequest.IdAttached3),
+                        (documentRequest.Base64Attached4, documentRequest.IdAttached4),
+                        (documentRequest.Base64Attached5, documentRequest.IdAttached5),
+                        (documentRequest.Base64Attached6, documentRequest.IdAttached6)
+                    };
+
+                    // VALIDACIÓN ANTES DE PROCESAR DATOS
+                    foreach (var (base64, id) in attachments)
+                    {
+                        if (!string.IsNullOrEmpty(base64))
+                        {
+                            byte[] payload;
+                            try
+                            {
+                                payload = Convert.FromBase64String(base64);
+                            }
+                            catch
+                            {
+                                responseModels.MessageResponse = $"El archivo adjunto no tiene un formato válido.";
+                                responseModels.CodeResponse = "406";
+                                return responseModels;
+                            }
+
+                            using var ms = new MemoryStream(payload);
+                            Span<byte> header = stackalloc byte[5];
+                            ms.Read(header);
+                            ms.Position = 0;
+
+                            string magic = Encoding.ASCII.GetString(header);
+                            if (magic == "%PDF-")
+                            {
+                                if (IsPdfPasswordProtected(payload))
+                                {
+                                    responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse, te invitamos a desbloquearlo usando alguna herramienta en internet.";
+                                    responseModels.CodeResponse = "406";
+                                    return responseModels;
+                                }
+                            }
+                            else
+                            {
+                                var info = Image.Identify(ms);
+                                if (info != null)
+                                {
+                                    continue;
+                                }
+                                else
+                                {
+                                    responseModels.MessageResponse = $"El archivo PDF adjunto está protegido con contraseña y no puede procesarse, te invitamos a desbloquearlo usando alguna herramienta en internet.";
+                                    responseModels.CodeResponse = "406";
+                                    return responseModels;
+                                }
+                            }
+                        }
+                    }
+
                     DisabilitiesModels disabilitiesModels = new(_configuration);
                     Utilities utilities = new(_configuration);
                     DataTable data = disabilitiesModels.PutDisabilities(documentRequest.IdDisability, 1);
@@ -447,15 +508,7 @@ namespace WebServicesGestionIncapacidades.Core
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
                     if (data.Rows[0]["code"].ToString() == "1")
                     {
-                        var attachments = new List<(string base64, string id)>
-                        {
-                            (documentRequest.Base64Attached1, documentRequest.IdAttached1),
-                            (documentRequest.Base64Attached2, documentRequest.IdAttached2),
-                            (documentRequest.Base64Attached3, documentRequest.IdAttached3),
-                            (documentRequest.Base64Attached4, documentRequest.IdAttached4),
-                            (documentRequest.Base64Attached5, documentRequest.IdAttached5),
-                            (documentRequest.Base64Attached6, documentRequest.IdAttached6)
-                        };
+                        
                         string DoumentDetails = "los siguientes documentos no se actualizaron: ";
 
                         foreach (var (base64, id) in attachments)
@@ -520,6 +573,12 @@ namespace WebServicesGestionIncapacidades.Core
                 responseModels.CodeResponse = "500";
             }
             return responseModels;
+        }
+
+        public void PostLogs(string Datos)
+        {
+            DisabilitiesModels disabilitiesModels = new(_configuration);
+            disabilitiesModels.PostLogs(Datos);
         }
     }
 }

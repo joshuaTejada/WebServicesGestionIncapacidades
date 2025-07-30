@@ -157,5 +157,23 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
+
+        public DataTable PostLogs(string msj)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("Datos", msj, DbType.String)
+                };
+                return dbConnection.GetDataTable("RegistarLogs", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
     }
 }

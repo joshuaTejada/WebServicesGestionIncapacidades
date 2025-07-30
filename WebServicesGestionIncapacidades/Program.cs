@@ -1,5 +1,8 @@
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.Http.Features;
 using System.Net;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
+using Microsoft.AspNetCore.Builder;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +20,20 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod()
                .AllowAnyHeader();
     });
+});
+
+long maxRequestBodySize = 30 * 1024 * 1024;
+
+// Aumenta el límite para Kestrel (servidor por defecto en desarrollo)
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = maxRequestBodySize;
+});
+
+// Aumenta el límite para IIS (cuando se publica en IIS)
+builder.Services.Configure<IISServerOptions>(options =>
+{
+    options.MaxRequestBodySize = maxRequestBodySize;
 });
 
 builder.Services.AddSwaggerGen();
@@ -43,7 +60,7 @@ if (app.Environment.IsDevelopment())
 app.UseCors("AllowAnyOrigin");
 app.UseHttpsRedirection();
 
-// ? Usa el middleware correcto de AspNetCoreRateLimit
+// Usa el middleware de AspNetCoreRateLimit
 app.UseIpRateLimiting();
 
 app.UseAuthorization();
