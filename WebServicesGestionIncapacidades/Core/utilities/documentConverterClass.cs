@@ -8,9 +8,9 @@ namespace WebServicesGestionIncapacidades.Core.utilities
 {
     public class documentConverterClass
     {
-        public string convertImgToPdf(string imgBase64, string rutaGuardado, string nombreDoc)
+        public string convertImgToPdf(byte[] imgBytes, string rutaGuardado, string nombreDoc)
         {
-            byte[] imgBytes = Convert.FromBase64String(imgBase64);
+            // Ya no es necesario convertir desde Base64.
 
             using (var metaStream = new MemoryStream(imgBytes))
             {
@@ -27,12 +27,10 @@ namespace WebServicesGestionIncapacidades.Core.utilities
             }
             jpegStream.Position = 0; // IMPORTANTÍSIMO
 
-            // Creamos el PDF usando el MemoryStream directamente
             using (var document = new PdfDocument())
             {
                 var page = document.AddPage();
 
-                // Aquí corregimos: pasamos un Func<Stream>, no el Stream directamente
                 using (var xImage = XImage.FromStream(() => jpegStream))
                 {
                     page.Width = xImage.PixelWidth * 72 / xImage.HorizontalResolution;

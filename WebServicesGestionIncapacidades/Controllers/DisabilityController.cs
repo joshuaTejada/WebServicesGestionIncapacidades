@@ -21,7 +21,7 @@ namespace WebServicesGestionIncapacidades.Controllers
         }
         // POST api/<DisabilityController>
         [HttpPost]
-        public DisabilityResponse Post([FromBody]DisabilitiesRequest disabilitiesRequest, [FromHeader]string token)
+        public DisabilityResponse Post([FromForm] DisabilitiesRequest disabilitiesRequest, [FromHeader]string token)
         {
             DisabilityResponse responseModels = new();
             try
