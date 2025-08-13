@@ -39,7 +39,7 @@ namespace WebServicesGestionIncapacidades.Controllers
 
         // POST api/<DisabilityController>
         [HttpPut]
-        public DisabilityResponse Put([FromBody] DocumentRequest documentRequest, [FromHeader] string token)
+        public DisabilityResponse Put([FromForm] DocumentRequest documentRequest, [FromHeader] string token)
         {
             DisabilityResponse responseModels = new();
             try

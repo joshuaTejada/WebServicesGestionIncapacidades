@@ -12,6 +12,21 @@ ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
 // Add services
 builder.Services.AddControllers();
 
+// --- CONFIGURACIÓN DE TAMAÑO DE SOLICITUD Y FORMULARIO ---
+long maxRequestSize = 300 * 1024 * 1024; // 300 MB
+
+// Configuración general del servidor
+builder.Services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = maxRequestSize);
+builder.Services.Configure<IISServerOptions>(options => options.MaxRequestBodySize = maxRequestSize);
+
+// Configuración específica para formularios multipart
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = maxRequestSize;
+    options.ValueLengthLimit = int.MaxValue;
+    options.MemoryBufferThreshold = int.MaxValue;
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAnyOrigin", builder =>
@@ -20,20 +35,6 @@ builder.Services.AddCors(options =>
                .AllowAnyMethod()
                .AllowAnyHeader();
     });
-});
-
-long maxRequestBodySize = 30 * 1024 * 1024;
-
-// Aumenta el límite para Kestrel (servidor por defecto en desarrollo)
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options.Limits.MaxRequestBodySize = maxRequestBodySize;
-});
-
-// Aumenta el límite para IIS (cuando se publica en IIS)
-builder.Services.Configure<IISServerOptions>(options =>
-{
-    options.MaxRequestBodySize = maxRequestBodySize;
 });
 
 builder.Services.AddSwaggerGen();
@@ -49,6 +50,13 @@ builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounte
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 
 var app = builder.Build();
+
+// Middleware de Buffering (está en el lugar correcto)
+app.Use(async (context, next) =>
+{
+    context.Request.EnableBuffering();
+    await next();
+});
 
 // Middleware
 if (app.Environment.IsDevelopment())

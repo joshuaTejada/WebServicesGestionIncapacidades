@@ -352,7 +352,6 @@ namespace WebServicesGestionIncapacidades.Core
                 return (false, "Ocurrió un error inesperado al guardar el documento.");
             }
         }
-
         public string getBodyEmail(DataTable dataUser)
         {
             string? color_primario = dataUser.Rows[0]["color_primario"].ToString();
@@ -452,7 +451,6 @@ namespace WebServicesGestionIncapacidades.Core
                     return responseModels;
                 }
 
-                // Agrupar los archivos y sus IDs correspondientes.
                 var attachments = new List<(IFormFile file, string id)>
                 {
                     (documentRequest.Base64Attached1, documentRequest.IdAttached1),
@@ -463,7 +461,6 @@ namespace WebServicesGestionIncapacidades.Core
                     (documentRequest.Base64Attached6, documentRequest.IdAttached6)
                 }.Where(a => a.file != null && a.file.Length > 0).ToList();
 
-                // 1. VALIDACIÓN PREVIA DE TODOS LOS ARCHIVOS
                 foreach (var (file, id) in attachments)
                 {
                     var validationError = ValidateFile(file);
@@ -475,7 +472,6 @@ namespace WebServicesGestionIncapacidades.Core
                     }
                 }
 
-                // 2. ACTUALIZAR EL ESTADO EN LA BASE DE DATOS
                 DisabilitiesModels disabilitiesModels = new(_configuration);
                 DataTable data = disabilitiesModels.PutDisabilities(documentRequest.IdDisability, 1);
 
@@ -486,42 +482,24 @@ namespace WebServicesGestionIncapacidades.Core
                     return responseModels;
                 }
 
-                // 3. GUARDAR LOS ARCHIVOS Y RECOPILAR ERRORES
                 string DoumentDetails = "Los siguientes documentos no se actualizaron: ";
                 bool hasErrors = false;
+                string idEmpresa = data.Rows[0]["id_empresa"].ToString();
 
                 foreach (var (file, id) in attachments)
                 {
-                    // Convertir IFormFile a byte[] para pasarlo al método SaveDocument
-                    byte[] fileBytes;
-                    using (var memoryStream = new MemoryStream())
-                    {
-                        file.CopyTo(memoryStream);
-                        fileBytes = memoryStream.ToArray();
-                    }
-
-                    // Se reutiliza el método SaveDocument que ya acepta byte[]
-                    var (isSaveValid, Message) = SaveDocument(fileBytes, $"{data.Rows[0]["id_empresa"]}_{documentRequest.IdDisability}_{id}.pdf");
-                    if (!isSaveValid)
-                    {
-                        hasErrors = true;
-                        DoumentDetails += $"({id}) ";
-                         PostLogs($"Error al guardar adjunto {id}: {Message}");
-                    }
+                    ProcessAndSaveFile(file, idEmpresa, documentRequest.IdDisability.ToString(), id);                  
                 }
 
                 responseModels.Token = Token;
                 responseModels.CodeResponse = "201";
-                // Si no hubo errores, se puede devolver un mensaje de éxito limpio.
                 responseModels.Data = hasErrors ? DoumentDetails : "Documentos actualizados correctamente.";
             }
             catch (Exception ex)
             {
-                // MEJORA: Log detallado de la excepción.
                 string logMessage = $"Error en PutDisabilities para la incapacidad ID '{documentRequest.IdDisability}'.\n" +
                                     $"Detalles de la Excepción: {ex.ToString()}";
-                // PostLogs(logMessage);
-
+                PostLogs(logMessage);
                 responseModels.MessageResponse = "Error al actualizar la incapacidad";
                 responseModels.CodeResponse = "500";
             }
