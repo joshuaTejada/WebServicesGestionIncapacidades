@@ -1,10 +1,7 @@
-﻿using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Mvc;
 using WebServicesGestionIncapacidades.Core;
 using WebServicesGestionIncapacidades.Models.Class.Request;
 using WebServicesGestionIncapacidades.Models.Class.Response;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -21,7 +18,7 @@ namespace WebServicesGestionIncapacidades.Controllers
         }
         // POST api/<DisabilityController>
         [HttpPost]
-        public DisabilityResponse Post([FromForm] DisabilitiesRequest disabilitiesRequest, [FromHeader]string token)
+        public DisabilityResponse Post([FromForm] DisabilitiesRequest disabilitiesRequest, [FromHeader] string token)
         {
             DisabilityResponse responseModels = new();
             try
@@ -81,5 +78,5 @@ namespace WebServicesGestionIncapacidades.Controllers
         //    var a = await utilitiesCore.SendEmail("informatica3@gigha.com.co", "Incapacidad recibida", "Pruebas", true);
         //    return a;
         //}
-    }    
+    }
 }

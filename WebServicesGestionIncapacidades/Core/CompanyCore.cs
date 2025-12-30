@@ -51,6 +51,7 @@ namespace WebServicesGestionIncapacidades.Core
             }
             catch (Exception)
             {
+                responseModels = new();
                 responseModels.MessageResponse = "Error al validar el usuario";
                 responseModels.CodeResponse = "500";
             }

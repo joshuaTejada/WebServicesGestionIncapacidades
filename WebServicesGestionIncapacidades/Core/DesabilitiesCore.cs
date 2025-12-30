@@ -254,7 +254,6 @@ namespace WebServicesGestionIncapacidades.Core
             }
             return responseModels;
         }
-
         private string ValidateFile(IFormFile file)
         {
             byte[] fileBytes;
@@ -274,7 +273,13 @@ namespace WebServicesGestionIncapacidades.Core
 
             if (magic == "%PDF-")
             {
-                if (IsPdfPasswordProtected(fileBytes))
+                try
+                {
+                    if (IsPdfPasswordProtected(fileBytes))
+                    {
+                        return "El archivo PDF está protegido con contraseña";
+                    }
+                }catch
                 {
                     return "El archivo PDF está protegido con contraseña";
                 }
@@ -285,34 +290,39 @@ namespace WebServicesGestionIncapacidades.Core
             }
             return null;
         }
-
         private void ProcessAndSaveFile(IFormFile file, string idEmpresa, string idIncapacidad, string idAdjunto)
         {
-            byte[] fileBytes;
-            using (var memoryStream = new MemoryStream())
+            try
             {
-                file.CopyTo(memoryStream);
-                fileBytes = memoryStream.ToArray();
+                byte[] fileBytes;
+                using (var memoryStream = new MemoryStream())
+                {
+                    file.CopyTo(memoryStream);
+                    fileBytes = memoryStream.ToArray();
+                }
+
+                if (fileBytes.Length < 5) return;
+
+                byte[] header = new byte[5];
+                Array.Copy(fileBytes, header, 5);
+                string magic = Encoding.ASCII.GetString(header);
+                string fileName = $"{idEmpresa}_{idIncapacidad}_{idAdjunto}";
+
+                if (magic == "%PDF-")
+                {
+                    SaveDocument(fileBytes, $"{fileName}.pdf");
+                }
+                else if (Image.Identify(fileBytes) != null)
+                {
+                    documentConverterClass documentConverter = new();
+                    documentConverter.convertImgToPdf(fileBytes, _configuration["route:pathDocument"], fileName);
+                }
             }
-
-            if (fileBytes.Length < 5) return;
-
-            byte[] header = new byte[5];
-            Array.Copy(fileBytes, header, 5);
-            string magic = Encoding.ASCII.GetString(header);
-            string fileName = $"{idEmpresa}_{idIncapacidad}_{idAdjunto}";
-
-            if (magic == "%PDF-")
+            catch (Exception ex)
             {
-                SaveDocument(fileBytes, $"{fileName}.pdf");
-            }
-            else if (Image.Identify(fileBytes) != null)
-            {
-                documentConverterClass documentConverter = new();
-                documentConverter.convertImgToPdf(fileBytes, _configuration["route:pathDocument"], fileName);
+                PostLogs(ex.Message);
             }
         }
-
         private bool IsPdfPasswordProtected(byte[] pdfBytes)
         {
             try
@@ -347,7 +357,6 @@ namespace WebServicesGestionIncapacidades.Core
             {
                 string logMessage = $"Error en SaveDocument al procesar el archivo '{fileName ?? "nombre desconocido"}'.\n" +
                              $"Detalles de la Excepción: {ex.ToString()}";
-
                 PostLogs(logMessage);
                 return (false, "Ocurrió un error inesperado al guardar el documento.");
             }
@@ -488,7 +497,7 @@ namespace WebServicesGestionIncapacidades.Core
 
                 foreach (var (file, id) in attachments)
                 {
-                    ProcessAndSaveFile(file, idEmpresa, documentRequest.IdDisability.ToString(), id);                  
+                    ProcessAndSaveFile(file, idEmpresa, documentRequest.IdDisability.ToString(), id);
                 }
 
                 responseModels.Token = Token;
