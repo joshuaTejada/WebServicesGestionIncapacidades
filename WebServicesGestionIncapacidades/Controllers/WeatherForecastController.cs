@@ -8,7 +8,7 @@ namespace WebServicesGestionIncapacidades.Controllers
     {
         private static readonly string[] Summaries = new[]
         {
-            "JOSHUA", "TOMAS", "SEBAS"
+            "JOSHUA T", "TOMAS", "SEBAS"
         };
 
         private readonly ILogger<WeatherForecastController> _logger;
