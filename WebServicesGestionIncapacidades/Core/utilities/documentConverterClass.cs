@@ -10,8 +10,6 @@ namespace WebServicesGestionIncapacidades.Core.utilities
     {
         public string convertImgToPdf(byte[] imgBytes, string rutaGuardado, string nombreDoc)
         {
-            // Ya no es necesario convertir desde Base64.
-
             using (var metaStream = new MemoryStream(imgBytes))
             {
                 var info = Image.Identify(metaStream);

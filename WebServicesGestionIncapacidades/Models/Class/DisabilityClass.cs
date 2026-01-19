@@ -9,6 +9,7 @@
         public string descripcionIncapacidad { get; set; }
         public string fecha_inicial { get; set; }
         public int dias { get; set; }
+        public int numero_rechazos { get; set; }
         public string numero_incapacidad { get; set; }
         public string incapacidad_inicial { get; set; }
         public string Diagnostico { get; set; }
@@ -26,6 +27,7 @@
         public string Estado { get; set; }
         public string Fecha_registro_incapacidad { get; set; }
         public string Link { get; set; }
+        public string numero_rechazos { get; set; }
     }
 
 }

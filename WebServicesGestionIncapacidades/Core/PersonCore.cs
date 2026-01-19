@@ -44,7 +44,12 @@ namespace WebServicesGestionIncapacidades.Core
                         responseModels.CodeResponse = "200";
                     }
                     else
-                        responseModels.CodeResponse = "204";
+                    {
+                        if (dataUser.Rows[0]["code"].ToString() == "2")
+                            responseModels.CodeResponse = "204";
+                        else
+                            responseModels.CodeResponse = "201";
+                    }
                 }
             }
             catch (Exception)
@@ -95,8 +100,7 @@ namespace WebServicesGestionIncapacidades.Core
                         responseModels.Data = GetDataGeneralClass(dataUser);
                     }
                     else
-                        responseModels.CodeResponse = "204";
-                    
+                        responseModels.CodeResponse = "204";                    
                 }
             }
             catch (Exception)

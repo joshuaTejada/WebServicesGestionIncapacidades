@@ -219,7 +219,7 @@ namespace WebServicesGestionIncapacidades.Core
                     }
                 }
 
-                //  GUARDAR DATOS PRINCIPALES EN LA BD
+                // GUARDAR DATOS PRINCIPALES EN LA BD
                 DataTable data = disabilitiesModels.PostDisabilities(disabilitiesRequest);
 
                 responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
