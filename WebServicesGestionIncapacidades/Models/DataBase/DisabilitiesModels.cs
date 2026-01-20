@@ -158,7 +158,7 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
             }
         }
 
-        public DataTable PostLogs(string msj)
+        public DataTable PostLogs(string msj, string identificacion)
         {
             try
             {
@@ -166,7 +166,8 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
 
                 List<SqlParameter> parameters = new()
                 {
-                    dbConnection.CreateParam("Datos", msj, DbType.String)
+                    dbConnection.CreateParam("Datos", msj, DbType.String),
+                    dbConnection.CreateParam("identificacion", identificacion, DbType.String)
                 };
                 return dbConnection.GetDataTable("RegistarLogs", parameters);
             }

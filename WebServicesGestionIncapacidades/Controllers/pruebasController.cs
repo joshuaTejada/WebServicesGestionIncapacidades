@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using WebServicesGestionIncapacidades.Core;
 using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class.Response;
 
@@ -27,6 +28,14 @@ namespace WebServicesGestionIncapacidades.Controllers
             return Token;
         }
 
+        // GET api/<pruebasController>/5
+        [HttpGet]
+        public string Get_pruebas()
+        {
+            DesabilitiesCore desabilitiesCore = new(_configuration);
 
+            desabilitiesCore.GeneratePdfFromSession("inc_b849e05c0e834a0c87460b43cfcdf006", "1_66666_2");
+            return "Correcto";
+        }
     }
 }

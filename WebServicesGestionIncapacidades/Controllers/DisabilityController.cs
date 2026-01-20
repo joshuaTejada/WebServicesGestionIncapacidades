@@ -16,6 +16,7 @@ namespace WebServicesGestionIncapacidades.Controllers
         {
             _configuration = configuration;
         }
+
         // POST api/<DisabilityController>
         [HttpPost]
         public DisabilityResponse Post([FromForm] DisabilitiesRequest disabilitiesRequest, [FromHeader] string token)
@@ -68,7 +69,6 @@ namespace WebServicesGestionIncapacidades.Controllers
             }
             return responseModels;
         }
-
 
         //[HttpGet]
         //public async Task<bool> Get() {
