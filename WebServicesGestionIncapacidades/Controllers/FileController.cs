@@ -25,7 +25,7 @@ namespace WebServicesGestionIncapacidades.Controllers
                     case "200":
                         return Ok(new { status = "uploaded", uploadFileRequest.Order });
                     case "204":
-                        return StatusCode(204, new { status = "204", uploadFileRequest.Order });
+                        return StatusCode(204, new { status = "204", uploadFileRequest.Order }); // session id no existe
                     case "406":
                         return StatusCode(406, new { status = "406", uploadFileRequest.Order });
                     case "404":

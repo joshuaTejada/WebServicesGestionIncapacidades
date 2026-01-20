@@ -302,8 +302,7 @@ namespace WebServicesGestionIncapacidades.Core
                         document ??= new Document(pdfDoc, iText.Kernel.Geom.PageSize.A4);
 
                         var imgData = ImageDataFactory.Create(file);
-                        var img = new Image(imgData)
-                            .SetAutoScale(true)
+                        var img = new Image(imgData).SetAutoScale(true)
                             .SetHorizontalAlignment(iText.Layout.Properties.HorizontalAlignment.CENTER);
 
                         document.Add(img);
@@ -315,7 +314,7 @@ namespace WebServicesGestionIncapacidades.Core
 
                 document?.Close();
 
-                PostLogs($"PDF generado exitosamente session '{sessionId}'");
+                PostLogs($"PDF generado exitosamente session '{sessionId}' | Numero de archivos: {files.Count}");
             }
             catch (PdfException pdfEx)
             {
