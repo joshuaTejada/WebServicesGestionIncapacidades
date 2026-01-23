@@ -42,6 +42,8 @@
         public string? CodeResponse { get; set; } = string.Empty;
         public string? MessageResponse { get; set; } = string.Empty;
         public string? Token { get; set; }
+        public string? identificacion { get; set; }
+
         public FixDesalibityClass? Data { get; set; }
     }
     public class healthFundResponse

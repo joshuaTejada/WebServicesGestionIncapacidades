@@ -266,7 +266,7 @@ namespace WebServicesGestionIncapacidades.Core
                 throw new ArgumentException("No hay archivos para generar el PDF.");
 
             var outputDir = Path.GetDirectoryName(outputPdf);
-            if (!Directory.Exists(outputDir))
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
                 Directory.CreateDirectory(outputDir);
 
             if (File.Exists(outputPdf))
@@ -276,53 +276,69 @@ namespace WebServicesGestionIncapacidades.Core
             {
                 using var writer = new PdfWriter(outputPdf);
                 using var pdfDoc = new PdfDocument(writer);
-                var merger = new PdfMerger(pdfDoc);
+                using var document = new Document(pdfDoc); // SE CREA UNA SOLA VEZ
 
-                Document? document = null;
+                PdfMerger merger = new PdfMerger(pdfDoc);
 
-                for (int i = 0; i < files.Count; i++)
+                const float margin = 36f; // margen uniforme (0.5 inch)
+
+                foreach (var file in files)
                 {
-                    var file = files[i];
                     var ext = Path.GetExtension(file).ToLowerInvariant();
 
+                    // ====== PDFs ======
                     if (ext == ".pdf")
                     {
-                        // Cerrar Document antes de mergear PDFs
-                        document?.Close();
-                        document = null;
-
                         using var reader = new PdfReader(file);
                         using var srcPdf = new PdfDocument(reader);
 
                         merger.Merge(srcPdf, 1, srcPdf.GetNumberOfPages());
                     }
+                    // ====== IMÁGENES ======
                     else
                     {
-                        // Inicializar Document solo cuando se necesite
-                        document ??= new Document(pdfDoc, iText.Kernel.Geom.PageSize.A4);
+                        // Crear página EXCLUSIVA para la imagen
+                        var page = pdfDoc.AddNewPage(iText.Kernel.Geom.PageSize.A4);
+                        int pageNum = pdfDoc.GetNumberOfPages();
+                        var pageSize = page.GetPageSize();
+
+                        float availableWidth = pageSize.GetWidth() - margin * 2;
+                        float availableHeight = pageSize.GetHeight() - margin * 2;
 
                         var imgData = ImageDataFactory.Create(file);
-                        var img = new Image(imgData).SetAutoScale(true)
-                            .SetHorizontalAlignment(iText.Layout.Properties.HorizontalAlignment.CENTER);
+                        var img = new Image(imgData);
 
+                        img.ScaleToFit(availableWidth, availableHeight);
+
+                        float imgWidth = img.GetImageScaledWidth();
+                        float imgHeight = img.GetImageScaledHeight();
+
+                        float x = (pageSize.GetWidth() - imgWidth) / 2;
+                        float y = (pageSize.GetHeight() - imgHeight) / 2;
+
+                        img.SetFixedPosition(pageNum, x, y);
                         document.Add(img);
-
-                        if (i != files.Count - 1)
-                            document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE));
                     }
                 }
 
-                document?.Close();
+                // 🔴 Limpieza final: eliminar páginas vacías si existieran
+                for (int i = pdfDoc.GetNumberOfPages(); i >= 1; i--)
+                {
+                    var page = pdfDoc.GetPage(i);
+                    if (page.GetContentStreamCount() == 0)
+                        pdfDoc.RemovePage(i);
+                }
 
                 PostLogs($"PDF generado exitosamente session '{sessionId}' | Numero de archivos: {files.Count}");
             }
             catch (PdfException pdfEx)
             {
-                // LOG DETALLADO
                 PostLogs($"Error iText al generar PDF: {pdfEx.Message}");
                 throw new Exception($"Error iText al generar PDF: {pdfEx.Message}", pdfEx);
             }
-        }      
+        }
+
+
         public (bool IsValid, string Message) SaveDocument(byte[] documentBytes, string? fileName)
         {
             try
@@ -377,7 +393,9 @@ namespace WebServicesGestionIncapacidades.Core
                     responseModels.MessageResponse = data.Rows[0]["msg"].ToString();
                     if (data.Rows[0]["code"].ToString() == "1")
                     {
-                        responseModels.Token = Token;
+                        SecurityCore securityCore = new(_configuration);
+                        responseModels.Token = securityCore.GenerateToken(data.Rows[0]["identificacion"].ToString(), "");
+                        responseModels.identificacion = data.Rows[0]["identificacion"].ToString();
                         responseModels.CodeResponse = "200";
                         var DataIncapacidad = "" + data.Rows[0]["DataIncapacidad"].ToString() + "";
                         var DataCompany = "" + data.Rows[0]["DataCompany"].ToString() + "";
@@ -418,10 +436,9 @@ namespace WebServicesGestionIncapacidades.Core
             try
             {
                 if (string.IsNullOrEmpty(token)) return false;
+                var toke_nuevo = CreatTokenDisability(Id);
 
-                var key = _configuration["JwtSettings:SaltFixDesability"];
-                UtilitiesCore utilitiesCore = new(_configuration);
-                if (utilitiesCore.GetSHA512(Id.ToString() + key) == token)
+                if (toke_nuevo == token)
                     return true;
                 else
                     return false;
@@ -434,18 +451,20 @@ namespace WebServicesGestionIncapacidades.Core
         public DisabilityResponse PutDisabilities(string Token, DocumentRequest documentRequest)
         {
             DisabilityResponse responseModels = new();
+            
+            responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
+            responseModels.CodeResponse = "401";
+
+            SecurityCore securityCore1 = new(_configuration);
+            var isValid = IsTokenValidDisability(Token, documentRequest.IdDisability);
+            if (!isValid)
+            {
+                PostLogs("Token = " + Token + " , IdDisability = " + documentRequest.IdDisability);
+                return responseModels;
+            }
+
             try
             {
-                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
-                responseModels.CodeResponse = "401";
-
-                SecurityCore securityCore1 = new(_configuration);
-                var isValid = IsTokenValidDisability(Token, documentRequest.IdDisability);
-                if (!isValid)
-                {
-                    return responseModels;
-                }
-
                 var attachments = new List<(string file, string id)>
                 {
                     (documentRequest.Base64Attached1, documentRequest.IdAttached1),

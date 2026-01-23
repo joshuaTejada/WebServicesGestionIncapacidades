@@ -108,5 +108,67 @@ namespace WebServicesGestionIncapacidades.Core
                 return true;
             }
         }
+        public string DeleteFile(string sessionId, int order, string Token)
+        {
+            DesabilitiesCore desabilitiesCore = new(_configuration);
+            try
+            {
+                // 1) Validaciones básicas
+                if (string.IsNullOrWhiteSpace(sessionId))
+                    return "400"; // Parámetros inválidos
+
+                if (order <= 0)
+                    return "400"; // Parámetros inválidos
+
+                // 2) Validar token
+                SecurityCore securityCore = new(_configuration);
+                var (isValid, claimsPrincipal) = securityCore.IsTokenValid(Token);
+                if (!isValid)
+                    return "401";
+
+                // (Opcional) obtener id del token si en el futuro quieres comparar con la sesión
+                var idToken = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+
+                // 3) Ruta de la sesión
+                var tempRoot = _configuration["route:pathTemp"];
+                var sessionPath = Path.Combine(tempRoot ?? string.Empty, sessionId);
+
+                if (!Directory.Exists(sessionPath))
+                    return "204"; // Sesión no válida
+
+                // 4) Buscar el archivo por orden (formato D4)
+                string orderPrefix = $"{order:D4}";
+                var allFiles = Directory.GetFiles(sessionPath);
+                var targetFile = allFiles.FirstOrDefault(f =>
+                    Path.GetFileName(f).StartsWith(orderPrefix, StringComparison.OrdinalIgnoreCase));
+
+                if (targetFile == null)
+                    return "404"; // Archivo no encontrado
+
+                // 5) Eliminar el archivo objetivo
+                try
+                {
+                    File.Delete(targetFile);
+                }
+                catch (IOException ioEx)
+                {
+                    desabilitiesCore.PostLogs($"DeleteFile - IO Error deleting {targetFile}: {ioEx}");
+                    return "409"; // Conflicto al eliminar
+                }
+                catch (Exception ex)
+                {
+                    desabilitiesCore.PostLogs($"DeleteFile - Error deleting {targetFile}: {ex}");
+                    return "500";
+                }
+
+                return "200";
+            }
+            catch (Exception ex)
+            {
+                desabilitiesCore.PostLogs($"DeleteFile - Unexpected error: {ex}");
+                return "500";
+            }
+        }
+
     }
 }
