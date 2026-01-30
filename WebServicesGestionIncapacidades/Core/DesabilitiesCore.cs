@@ -256,7 +256,7 @@ namespace WebServicesGestionIncapacidades.Core
             // iText
             BuildPdf(files, outputPdf, sessionId);
 
-            //Directory.Delete(sessionPath, true);
+            Directory.Delete(sessionPath, true);
 
             return outputPdf;
         }
