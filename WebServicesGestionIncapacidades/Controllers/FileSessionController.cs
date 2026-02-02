@@ -14,6 +14,7 @@ namespace WebServicesGestionIncapacidades.Controllers
         {
             _configuration = configuration;
         }
+        //session
         [HttpPost("session")]
         public IActionResult CreateSession([FromHeader] string Token)
         {
