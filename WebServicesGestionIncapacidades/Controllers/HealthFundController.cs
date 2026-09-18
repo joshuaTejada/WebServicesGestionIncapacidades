@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using WebServicesGestionIncapacidades.Core;
 using WebServicesGestionIncapacidades.Models.Class.Response;
 
@@ -8,23 +9,23 @@ namespace WebServicesGestionIncapacidades.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AttachedRequiredController : ControllerBase
+    public class HealthFundController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
 
-        public AttachedRequiredController(IConfiguration configuration)
+        public IConfiguration _configuration;
+        public HealthFundController(IConfiguration configuration)
         {
             _configuration = configuration;
         }
-        // GET api/<AttachedRequiredController>/5
+
         [HttpGet]
-        public AttachedResponse GetAttachedRequired([FromHeader] string Token, int IdTypeDisabilities, string IdEPS, int Transcribed, int Transit, string DiagnosticoCode)
+        public healthFundResponse Get(int IdTypeDisability,string ID, [FromHeader]string Token)
         {
-            AttachedResponse responseModels = new();
+            healthFundResponse responseModels = new();
             try
             {
                 DesabilitiesCore desabilitiesCore = new(_configuration);
-                responseModels = desabilitiesCore.GetAttachedRequired(Token, IdTypeDisabilities, IdEPS, Transcribed, Transit, DiagnosticoCode);
+                responseModels = desabilitiesCore.GetHealthFund(Token, IdTypeDisability, ID);
             }
             catch (Exception ex)
             {

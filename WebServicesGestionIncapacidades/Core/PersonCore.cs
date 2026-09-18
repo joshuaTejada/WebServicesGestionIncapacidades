@@ -1,4 +1,6 @@
 ﻿using System.Data;
+using System.Security;
+using System.Security.Claims;
 using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class;
 using WebServicesGestionIncapacidades.Models.Class.Request;
@@ -21,7 +23,7 @@ namespace WebServicesGestionIncapacidades.Core
             ResponseModels responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar.";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
@@ -31,17 +33,23 @@ namespace WebServicesGestionIncapacidades.Core
                 {
                     PersonModels userModel = new(_configuration);
                     Utilities utilities = new(_configuration);
+                    SecurityCore securityCore = new(_configuration);
                     DataTable dataUser = userModel.ValidateDataPerson(personRequest);
 
                     responseModels.MessageResponse = dataUser.Rows[0]["msg"].ToString();
                     responseModels.Data = GetDataGeneralClass(dataUser);
                     if (dataUser.Rows[0]["code"].ToString() == "1")
                     {
-                        responseModels.Token = Token;
+                        responseModels.Token = securityCore.GenerateToken(personRequest.ID, "");
                         responseModels.CodeResponse = "200";
                     }
                     else
-                        responseModels.CodeResponse = "204";
+                    {
+                        if (dataUser.Rows[0]["code"].ToString() == "2")
+                            responseModels.CodeResponse = "204";
+                        else
+                            responseModels.CodeResponse = "201";
+                    }
                 }
             }
             catch (Exception)
@@ -59,6 +67,8 @@ namespace WebServicesGestionIncapacidades.Core
                 DataFondos = dataUser.Rows[0]["DataFondos"].ToString(),
                 DataTypeDesabilities = dataUser.Rows[0]["DataTipoIncapacidad"].ToString(),
                 DataDiagnostico = dataUser.Rows[0]["DataDiagnosticos"].ToString(),
+                DataEmpleado = dataUser.Rows[0]["DataEmpleado"].ToString(),
+                Rechazadas = int.Parse(dataUser.Rows[0]["Rechazadas"].ToString()),
             };
             return dataGeneralClass;
         }
@@ -67,26 +77,30 @@ namespace WebServicesGestionIncapacidades.Core
             ResponseModels responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 SecurityCore securityCore1 = new(_configuration);
                 var (isValid, claimsPrincipal) = securityCore1.IsTokenValid(Token);
                 if (isValid)
                 {
+                    var NitCompany = claimsPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+                    personRequest.NitCompany = NitCompany;
+
                     PersonModels userModel = new(_configuration);
                     Utilities utilities = new(_configuration);
+                    SecurityCore securityCore = new(_configuration);
                     DataTable dataUser = userModel.PostPerson(personRequest);
 
                     responseModels.MessageResponse = dataUser.Rows[0]["msg"].ToString();
                     if (dataUser.Rows[0]["code"].ToString() == "1")
                     {
-                        responseModels.Token = Token;
+                        responseModels.Token = securityCore.GenerateToken(personRequest.ID, "");
                         responseModels.CodeResponse = "201";
                         responseModels.Data = GetDataGeneralClass(dataUser);
                     }
                     else
-                        responseModels.CodeResponse = "204";
+                        responseModels.CodeResponse = "204";                    
                 }
             }
             catch (Exception)

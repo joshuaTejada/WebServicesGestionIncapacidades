@@ -6,6 +6,10 @@ using WebServicesGestionIncapacidades.Models.DataBase.Utilities;
 using WebServicesGestionIncapacidades.Models.DataBase;
 using Microsoft.IdentityModel.Tokens;
 using WebServicesGestionIncapacidades.Models.Class;
+using Newtonsoft.Json.Linq;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using System.Security.Claims;
 
 namespace WebServicesGestionIncapacidades.Core
 {
@@ -22,7 +26,7 @@ namespace WebServicesGestionIncapacidades.Core
             CompanyDataResponse responseModels = new();
             try
             {
-                responseModels.MessageResponse = "Token expirado";
+                responseModels.MessageResponse = "Tu sesión caducó. Recarga la página o vuelve al inicio para continuar";
                 responseModels.CodeResponse = "401";
 
                 var nit = IsTokenValid(TokenCompany);
@@ -41,13 +45,13 @@ namespace WebServicesGestionIncapacidades.Core
                         responseModels.CodeResponse = "200";
                         responseModels.Data = GetDataCompanyFormat(dataUser);
                         responseModels.Data.logo = GetLogoBase64(dataUser.Rows[0]["logo"].ToString());
+                        responseModels.Data.Background = GetLogoBase64(dataUser.Rows[0]["backgroundo"].ToString());
                     }
-                    else
-                        responseModels.CodeResponse = "401";
                 }
             }
             catch (Exception)
             {
+                responseModels = new();
                 responseModels.MessageResponse = "Error al validar el usuario";
                 responseModels.CodeResponse = "500";
             }
@@ -74,7 +78,33 @@ namespace WebServicesGestionIncapacidades.Core
         }
         public string IsTokenValid(string TokenCompany)
         {
-            return "890913990";
+            try
+            {
+                if (string.IsNullOrEmpty(TokenCompany)) return null;
+
+                var key = new byte[32];
+                key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]);
+
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                SecurityToken securityToken;
+                var principal = tokenHandler.ValidateToken(TokenCompany, validationParameters, out securityToken);
+
+                return principal.FindFirst(ClaimTypes.Name)?.Value;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
     }
 }

@@ -42,6 +42,22 @@
         public string? CodeResponse { get; set; } = string.Empty;
         public string? MessageResponse { get; set; } = string.Empty;
         public string? Token { get; set; }
+        public string? identificacion { get; set; }
+
         public FixDesalibityClass? Data { get; set; }
+    }
+    public class healthFundResponse
+    {
+        public string? CodeResponse { get; set; } = string.Empty;
+        public string? MessageResponse { get; set; } = string.Empty;
+        public string? Token { get; set; }
+        public string? IdFund { get; set; }
+    }
+    public class DisabilityListResponse
+    {
+        public string? CodeResponse { get; set; } = string.Empty;
+        public string? MessageResponse { get; set; } = string.Empty;
+        public string? Token { get; set; }
+        public List<GeneralDisabilityClass>? Data { get; set; }
     }
 }

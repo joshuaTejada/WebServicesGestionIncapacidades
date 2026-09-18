@@ -11,5 +11,6 @@
         public string? DateStart { get; set; }
         public string? EPS { get; set; }
         public string? NitCompany { get; set; }
+        public string? Nomina { get; set; }
     }
 }

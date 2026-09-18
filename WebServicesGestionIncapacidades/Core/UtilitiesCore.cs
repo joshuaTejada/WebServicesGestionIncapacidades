@@ -59,13 +59,29 @@ namespace WebServicesGestionIncapacidades.Core
             }
             return result;
         }
-        public string GetSHA256(string value)
+        public string GetSHA512(string value)
         {
             using (SHA512 sha512 = SHA512.Create())
             {
                 byte[] hashBytes = sha512.ComputeHash(Encoding.UTF8.GetBytes(value));
-                return Convert.ToBase64String(hashBytes);
+                string x = Convert.ToBase64String(hashBytes);
+                return x;
             }
+        }
+        public string GetEPSBase64(string path)
+        {
+            string pathClient = _configuration["route:pathFondos"] + "\\" + path + ".jpg";
+            if (!File.Exists(pathClient)) return null;
+            byte[] pdfBytes = System.IO.File.ReadAllBytes(pathClient);
+            string base64pdf = Convert.ToBase64String(pdfBytes);
+            return base64pdf;
+        }
+        public string GetLogoBase64(string pathLogo)
+        {
+            string pathClient = _configuration["route:pathLogo"] + "\\" + pathLogo;
+            byte[] pdfBytes = System.IO.File.ReadAllBytes(pathClient);
+            string base64pdf = Convert.ToBase64String(pdfBytes);
+            return base64pdf;
         }
     }
 }

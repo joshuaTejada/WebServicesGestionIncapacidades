@@ -48,7 +48,7 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
-        public DataTable GetAttachedForTypeDesability(string IdTypeDisabilities, string IdEPS, int Transcribed)
+        public DataTable GetAttachedForTypeDesability(int IdTypeDisabilities, string IdEPS, int Transcribed, int Transit, string DiagnosticoCode)
         {
             try
             {
@@ -57,8 +57,10 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 List<SqlParameter> parameters = new()
                 {
                     dbConnection.CreateParam("IdFondo", IdEPS, DbType.String),
-                    dbConnection.CreateParam("IdIncapacidades", IdTypeDisabilities, DbType.String),
-                    dbConnection.CreateParam("Transcrita", Transcribed, DbType.Int16)
+                    dbConnection.CreateParam("IdIncapacidades", IdTypeDisabilities, DbType.Int64),
+                    dbConnection.CreateParam("Transcrita", Transcribed, DbType.Int16),
+                    dbConnection.CreateParam("es_transito ", Transit, DbType.Int16),
+                    dbConnection.CreateParam("DiagnosticoCode ", DiagnosticoCode, DbType.String)
                 };
                 return dbConnection.GetDataTable("ConsultarAdjuntosRequridos", parameters);
             }
@@ -101,6 +103,25 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                 throw;
             }
         }
+        public DataTable GetHealthFund(int IdTypeDisability, string empresa, string ID)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("IdTipoIncapacidades", IdTypeDisability, DbType.Int64),
+                    dbConnection.CreateParam("Empresa", empresa, DbType.String),
+                    dbConnection.CreateParam("ID", ID, DbType.String)
+                };
+                return dbConnection.GetDataTable("ConsultarFondoPorTipoIncapacidad", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
         public DataTable PutDisabilities(int idDisability, int option)
         {
             try
@@ -113,6 +134,42 @@ namespace WebServicesGestionIncapacidades.Models.DataBase
                     dbConnection.CreateParam("Option", option, DbType.Int64)
                 };
                 return dbConnection.GetDataTable("ActualizarIncapacidad", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+        public DataTable GetDisabilities(int ID)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("Identificacion", ID, DbType.String)
+                };
+                return dbConnection.GetDataTable("ConsultarIncapacidades", parameters);
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        public DataTable PostLogs(string msj, string identificacion)
+        {
+            try
+            {
+                dbConnection = new ConnectionSQLModel(_configuration);
+
+                List<SqlParameter> parameters = new()
+                {
+                    dbConnection.CreateParam("Datos", msj, DbType.String),
+                    dbConnection.CreateParam("identificacion", identificacion, DbType.String)
+                };
+                return dbConnection.GetDataTable("RegistarLogs", parameters);
             }
             catch (Exception)
             {

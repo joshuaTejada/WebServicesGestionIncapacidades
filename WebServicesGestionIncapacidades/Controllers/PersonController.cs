@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebServicesGestionIncapacidades.Core;
+using WebServicesGestionIncapacidades.Core.Security;
 using WebServicesGestionIncapacidades.Models.Class.Request;
 using WebServicesGestionIncapacidades.Models.Class.Response;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace WebServicesGestionIncapacidades.Controllers
 {
@@ -32,6 +31,13 @@ namespace WebServicesGestionIncapacidades.Controllers
                 responseModels.MessageResponse = ex.Message;
             }
             return responseModels;
+        }
+
+        [HttpGet]
+        public string Get(string id)
+        {
+            SecurityCore securityCore = new(_configuration);            
+            return securityCore.GenerateToken(id,"");
         }
     }
 }
